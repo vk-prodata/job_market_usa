@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: dim_job_title
+    description: >
+      List of unique titles. 
+  - name: fact_job
+    description: >
+      Fact Jobs info with measures and references to DIM tables
+  - name: dim_company
+    description: >
+      List of - unique companies (company name)
+  - name: dim_location
+    description: >
+      List of - unique locations (city and state)
