@@ -8,6 +8,15 @@ Data Lake: Prefect, Google Cloud Storage, Google BigQuery
 DWH, DM: Google BigQuery, DBT
 Reporting: Google Data Studio
 
+## Deploy Instruction:
+1. Intall vs code, python (selenium, pandas, soup etc), Prefect. Login to cloud account and deploy local version
+2. Sign up/Logic to GCP, DBT
+3. Run scrapping job (any python workflow from the folder "linkedIn_job_scrapper")
+4. Deploy with Terraform or manually create Google cloud storage and Bigquery database.
+5. Run pipelines in the folder "jobs_data_lake" for populating GCP and clean/enrich data to BigQuery
+6. Deploy the folder "dbt_analytics" in dbt. Run pipelines for transforming data for Data Mart
+7. Open Google studio. Connect to DM queries and build a dashboard.
+
 ## Data Ingestion Schema
 ![Untitled Diagram drawio](https://user-images.githubusercontent.com/123039991/228688243-7c8eba31-fb2f-4bb1-8d2a-26cc107c14af.png)
 
