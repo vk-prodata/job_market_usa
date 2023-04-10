@@ -25,6 +25,7 @@ Reporting: Google Data Studio
 
 ## Report from Google Data Studio
 ![2023-03-29 16 10 34](https://user-images.githubusercontent.com/123039991/228688082-557b83dc-acc6-4cff-b6ef-00688027f806.jpg)
+[Job_Market_2023.pdf](https://github.com/vk-prodata/job_market_usa/files/11187368/Job_Market_2023.pdf)
 
 Link https://lookerstudio.google.com/s/nTTQAND75yE
 
