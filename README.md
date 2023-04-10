@@ -24,7 +24,8 @@ Reporting: Google Data Studio
 <img width="1342" alt="Screenshot 2023-03-29 at 2 28 15 PM" src="https://user-images.githubusercontent.com/123039991/228687724-941464ae-8b02-482c-beeb-cd1a7a90d49f.png">
 
 ## Report from Google Data Studio
-![2023-03-29 16 10 34](https://user-images.githubusercontent.com/123039991/228688082-557b83dc-acc6-4cff-b6ef-00688027f806.jpg)
+<img width="1194" alt="Screenshot 2023-04-09 at 8 23 53 PM" src="https://user-images.githubusercontent.com/123039991/230819456-7bdef531-58b8-4400-b716-dff70c14ebc1.png">
+
 [Job_Market_2023.pdf](https://github.com/vk-prodata/job_market_usa/files/11187368/Job_Market_2023.pdf)
 
 Link https://lookerstudio.google.com/s/nTTQAND75yE
