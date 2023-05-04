@@ -10,6 +10,8 @@ import random
 import time
 from datetime import datetime
 
+#DEPRECATED FILE. Linkedin doesn't allow correct FILTERING info without sign in
+
 # Configure logging settings
 logging.basicConfig(filename="scraping.log", level=logging.INFO)
 

@@ -1,4 +1,3 @@
-import pytest
 #from jobs_data_lake.helper import extract_salaries
 import helper
 
@@ -23,13 +22,15 @@ def test_split_location_list():
     """
     Test that the scrape_linkedin_jobs function returns a list.
     """
-    locations = ['North Carolina, United States', 'California, US', 'Miami-Fort Lauderdale Area', 'Phoenix, AZ',  'Linthicum, MD', 'United States', 'United States', 'New York, NY',
+    locations = ['Washington, DC (Hybrid)','Seattle, WA (On-site)', 'Nashville, TN (Hybrid)','North Carolina, United States', 'California, US', 'Miami-Fort Lauderdale Area', 'Phoenix, AZ',  'Linthicum, MD', 'United States', 'United States', 'New York, NY',
                  'Manhattan Beach, CA',   'Santa Clara, California','US']
     results = []
     for loc in locations:
         results.append(helper.split_location(loc))
     assert len(results) > 5
 
+
+test_split_location_list()
 # def test_scrape_linkedin_jobs_returns_jobs():
 #     """
 #     Test that the scrape_linkedin_jobs function returns a list of job dictionaries.

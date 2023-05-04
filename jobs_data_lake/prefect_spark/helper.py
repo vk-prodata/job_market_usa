@@ -1,5 +1,9 @@
 from ast import List, Tuple
+import datetime
+from math import inf
 import re
+import numpy as np
+import pandas as pd
 
 from pyparsing import Optional
 
@@ -60,15 +64,83 @@ def extract_salaries_str(text: str):
 def average_salary(text: str) -> float:
     salaries = extract_salaries(text)
     if len(salaries) == 1:
-        return salaries[0]
+        return align_salary(salaries[0], text)
     elif len(salaries) > 1:
-        return (salaries[0] + salaries[1])/ 2
+        return align_salary((salaries[0] + salaries[1])/ 2, text)
     else:
         return None
 
+def align_salary(salary:str,text: str):
+    res = None
+    s = str(salary)
+    if text.find('hr') >= 0: #if salary in hour
+        if salary > 100:
+            res = float(s[0:2]) * 2080 / 1000 #2080 hour avg in a year
+        else:
+            res = salary * 2080 / 1000
+    else:
+        if 40 < salary < 900:
+            res = salary
+
+    return res
+
+
+
+def fill_date_posting(date_posting):
+    if pd.isna(date_posting):
+        return (datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%m/%d/%Y")
+
+    return date_posting
+
+def extract_seniority(title: str) -> str:
+    seniority_keywords = {"senior":"Senior", "sr":"Senior", "lead":"Senior", "staff":"Staff/Lead", "lead":"Staff/Lead", "vp":" VP/Principal", "principal":" VP/Principal", "director":" VP/Principal", "junior":"Jr/Intern", "jr":"Jr/Intern", "intern":"Jr/Intern"}
+    for keyword, sen in seniority_keywords.items():
+        if keyword in title.lower():
+            return sen
+
+    return None
+
+def remote_type(location, title: str) -> str:
+    type_keywords = {"remote":"Remote", "hybrid":"Hybrid", "onsite":"Onsite", "on-site":"Onsite"}
+    for keyword, sen in type_keywords.items():
+        if keyword in location.lower():
+            return sen
+        if keyword in title.lower():
+            return sen
+    return None
+
+def cloud_type(title: str) -> str:
+    type_keywords = {"aws":"AWS", "gcp":"GCP", "azure":"Azure", "google":"Google", "cloud":"Any Cloud"}
+    for keyword, sen in type_keywords.items():
+        if keyword in title.lower():
+            return sen
+    return None
+
+def extract_positition_type(title: str) -> str:
+    type_keywords = {"analyst":"Data Analyst", "analysis":"Data Analyst", "science":"Data Science", "analytics":"Analytics Engineer", "intelligence":"BI Developer", "engineer":"Data Engineer", "data": "Any Data", "bi":"BI Developer",  "software":"Software Engineer"}
+    for keyword, sen in type_keywords.items():
+        if keyword in title.lower():
+            return sen
+
+    return "Other"
+
+
+def remove_extra_info_from_title(text):
+    # Find the index of the first occurrence of a comma, digit, or bracket in the string
+    index = len(text)
+    for char in [',', '(', ')', '[', ']', '{', '}','|','!','/', '-','0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+        if char in text:
+            char_index = text.index(char)
+            if char_index < index and char_index > 10: # clean word shouldn't be too small
+                index = char_index
+    # Remove everything after the index and append the modified string to the new list
+    return text[:index].strip()
+
+
+
 def shorten_state(state: str) -> str:
     states = {'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
-              'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'florida': 'FL', 'georgia': 'GA',
+              'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'dc':'DC', 'florida': 'FL', 'georgia': 'GA',
               'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA',
               'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
               'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
@@ -83,7 +155,10 @@ def shorten_state(state: str) -> str:
         return state.upper()
 
     state = state.lower()
-    return states.get(state, "Anywhere US")
+    return states.get(state, "USA")
+
+def clean_location(location:str) -> str:
+    return location.replace('Greater', '').replace('Metropolitan', '').replace('County', '').replace('Metro', '').replace('Area','').replace('(Remote)','').replace('(Onsite)','').replace('(Hybrid)','').replace('(On-site)','').strip()
 
 def split_location(location: str):
     """
@@ -99,10 +174,11 @@ def split_location(location: str):
                                    the tuple will be None.
     """
     #result = Tuple[str, Optional[str]]
-    city_state = location.split(", ")
-    if location.endswith('US') or location.endswith('United States'):
+    city_state = clean_location(location).split(", ")
+    if location.endswith('US') or location.find('United States') >= 0:
+        #city_state = city_state.split(" ")
         if len(city_state) == 1:
-            result = None, "Anywhere US"
+            result = None, "USA"
         elif len(city_state) == 2:
             result = None, shorten_state(city_state[0])
         elif len(city_state) == 3:
@@ -111,13 +187,23 @@ def split_location(location: str):
             result = city_state[0], city_state[1].split(" ")[0]
     else:
         if len(city_state) == 1:
-            if  shorten_state(city_state[0]) ==  "Anywhere US":
-                result = city_state[0],  "Anywhere US"
+            if  shorten_state(city_state[0]) ==  "USA":
+                result = city_state[0],  "USA"
             else:
                 result = None, shorten_state(city_state[0])
-        elif len(city_state) == 2:
-            result =city_state[0], shorten_state(city_state[1])
+        elif len(city_state) >= 2:
+            state = city_state[1].split(" ")
+            result =city_state[0], shorten_state(state[0])
         else:
-            result = None, "Anywhere US"
+            result = None, "USA"
     return result
 
+
+def coalesce(*values):
+    """Return the first non-None value or None if all values are None"""
+    return next((v for v in values if v is not None), None)
+
+def extract_location_from_filename(filename):
+    parts = filename.split("_")
+    location = parts[2]
+    return location
