@@ -490,3 +490,27 @@ scraping.log
 27-04-2023/data_engineer_St. Louis, Missouri_jobs_1_28-04-2023.csv
 27-04-2023/data_engineer_Tampa, Florida_jobs_1_28-04-2023.csv
 27-04-2023/data_engineer_Washington, DC_jobs_2_27-04-2023.csv
+linkedIn_job_scrapper/linkedin_scrapper_logged.py
+data/data_engineer_Atlanta, Georgia_jobs_1_04-05-2023.csv
+data/data_engineer_Austin, Texas_jobs_1_04-05-2023.csv
+data/data_engineer_Boston, Massachusetts_jobs_1_04-05-2023.csv
+data/data_engineer_Charlotte, North Carolina_jobs_1_05-05-2023.csv
+data/data_engineer_Chicago, Illinois_jobs_1_05-05-2023.csv
+data/data_engineer_Columbus, Ohio_jobs_1_04-05-2023.csv
+data/data_engineer_Dallas, Texas_jobs_1_04-05-2023.csv
+data/data_engineer_Denver, Colorado_jobs_1_04-05-2023.csv
+data/data_engineer_Houston, Texas_jobs_1_05-05-2023.csv
+data/data_engineer_Indianapolis, Indiana_jobs_1_05-05-2023.csv
+data/data_engineer_Kansas City, Missouri_jobs_1_05-05-2023.csv
+data/data_engineer_Los Angeles, California_jobs_1_05-05-2023.csv
+data/data_engineer_Miami, Florida_jobs_1_05-05-2023.csv
+data/data_engineer_Minneapolis, Minnesota_jobs_1_05-05-2023.csv
+data/data_engineer_Nashville, Tennessee_jobs_1_05-05-2023.csv
+data/data_engineer_New York City, New York_jobs_1_05-05-2023.csv
+data/data_engineer_Phoenix, Arizona_jobs_1_05-05-2023.csv
+data/data_engineer_San Francisco, California_jobs_1_05-05-2023.csv
+data/data_engineer_San Jose, California_jobs_1_05-05-2023.csv
+data/data_engineer_Seattle, Washington_jobs_1_05-05-2023.csv
+data/data_engineer_St. Louis, Missouri_jobs_1_05-05-2023.csv
+data/data_engineer_Tampa, Florida_jobs_1_05-05-2023.csv
+data/data_engineer_Washington, DC_jobs_1_04-05-2023.csv

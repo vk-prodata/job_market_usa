@@ -17,15 +17,8 @@ import time
 from datetime import datetime
 import urllib.parse
 
-# Configure logging settings
-logging.basicConfig(filename="scraping.log", level=logging.INFO)
-
-# Set up Chrome options to maximize the window
-options = webdriver.ChromeOptions()
-options.add_argument("--start-maximized")
 PAGE_SIZE = 25
-# Initialize the web driver with the Chrome options
-driver = webdriver.Chrome(options=options)
+MAX_RETRIES = 3
 
 
 def login_to_linkedin(username, password):
@@ -57,13 +50,12 @@ def prepare_string_for_url(string):
 def scrapping_workflow(loc: str, job_title: str):
     url_title = prepare_string_for_url(job_title)
     url_loc = prepare_string_for_url(loc)
-    #query = f'https://www.linkedin.com/jobs/search/?currentJobId=3327132402&distance=10&f_TPR=r604800&keywords={url_title}&location={url_loc}%2C%20United%20States&refresh=true&start='
-    query = f"https://www.linkedin.com/jobs/search/?currentJobId=3514605762&f_T=13447%2C340%2C2732%2C30209%2C30006&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
-    # TODO: Handle Exception
-    max_retries = 3
+    query = f"https://www.linkedin.com/jobs/search/?f_T=13447%2C340%2C2732%2C30209%2C30006&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+
     retry_count = 0
     success = False
-    while not success and retry_count < max_retries:
+    # open Job page. Sometimes it's failed, added try with 3 retries
+    while not success and retry_count < MAX_RETRIES:
         try:
             driver.get(query)
             success = True
@@ -76,13 +68,14 @@ def scrapping_workflow(loc: str, job_title: str):
 
     if not success:
         logging.info(
-            f"driver get failed after {max_retries=}")
+            f"driver get failed after {MAX_RETRIES=}")
 
     logging.info(
         f"Successfully open {query=}")
     time.sleep(random.choice(list(range(3, 8))))
+    # We find how many jobs are offered. Nice to have (not mandatory) this info for comparison count of all scrapped positions
+    # if we cannot capture jobs count set 1000 - max count that we can retrieve from linkedin UI
     try:
-        # We find how many jobs are offered.
         jobs_num_str = driver.find_element(
             By.CLASS_NAME, "jobs-search-results-list__subtitle").get_attribute("innerText")
 
@@ -102,20 +95,17 @@ def scrapping_workflow(loc: str, job_title: str):
         # Log a message indicating that the button was not found and we're retrying
         logging.info(f"jobs_num cannot retrieve {e=}")
         jobs_num = 1000
-
-    # 975
+    # MAIN SECTION FOR PARSING JOBS
     # We create a while loop to browse all jobs.
     i = 0
-    result = []
     while i <= int(jobs_num/PAGE_SIZE):
-        i = i + 1
         if is_last_page(driver) == True:
             break
-
         try:
-            scrolling_left_section()
+            scrolling_left_section(query+str(i*PAGE_SIZE))
             time.sleep(9)  # we need aboit 9 sec for loading all info
             jobs = get_job_lists_soup(loc)
+            i += 1
             driver.get(query+str(i*PAGE_SIZE))
             save_job_data(job_title, loc, 1, jobs)
             time.sleep(random.random()*5)
@@ -124,52 +114,53 @@ def scrapping_workflow(loc: str, job_title: str):
             time.sleep(0.8)
             pass
 
-    # Close the Selenium web driver
 
 def is_last_page(driver):
     try:
-        #t-24 t-black t-normal text-align-center
+        # t-24 t-black t-normal text-align-center
         no_matching_jobs = driver.find_element_by_tag_name("h1").text
         if no_matching_jobs == "No matching jobs found.":
             return True
     except:
         return False
 
-def scrolling_left_section():
-    err_cnt = 0
-    n = 0
-    while err_cnt < 3 and n != PAGE_SIZE:
-        #logging.info(f"Scrolling to bottom of page... times {err_cnt=}")
-        if is_last_page(driver) == True:
-            break
+
+def scrolling_left_section(full_query):
+    retry_count = 0
+    success = False
+    while not success and retry_count < MAX_RETRIES:
         try:
-            # driver.find_element(By.CSS_SELECTOR, '.jobs-search-results__list')
+            if is_last_page(driver) == True:
+                retry_count += 1
             jobs_block = driver.find_element(
                 By.CLASS_NAME, "jobs-search-results-list")
             jobs_list = jobs_block.find_elements(
                 By.CLASS_NAME, "jobs-search-results__list-item")
 
             if len(jobs_list) == 0:
-                err_cnt += 1
-            for j in jobs_list:
-                # print("__________")
-                n += 1
+                retry_count += 1
+                driver.get(full_query)
+            for j in range(len(jobs_list)):
                 driver.execute_script(
-                    "arguments[0].scrollIntoView();", jobs_list[n-1])
-                #print(n, " ", i.text)
-                if n in (3, 9, 14, 19, 22):
+                    "arguments[0].scrollIntoView();", jobs_list[j])
+                if j in (3, 9, 14, 19, 22):
                     time.sleep(random.random()*10)
-
-        # Handle any exception that may occur when locating or clicking on the button
+            success = True
         except Exception as e:
-            # Log a message indicating that the button was not found and we're retrying
-            logging.info(f"Show more button not found, retrying... {e=}")
-            # TODO Handle WebDriverException()
-            err_cnt += 1
+            # handle the exception, e.g., print an error message
+            logging.info(
+                f"scrolling get an exception occurred. Retrying...{e=}")
+            # increase the retry count
+            driver.get(full_query)
+            time.sleep(5)
+            retry_count += 1
+
+    if not success:
+        logging.info(
+            f"scrolling get failed after {MAX_RETRIES=}")
 
 
 def get_job_lists_soup(search_area: str):
-
     # Scrape the job postings
     jobs = []
     soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -177,12 +168,8 @@ def get_job_lists_soup(search_area: str):
         "div",
         class_="job-card-container",
     )
-    ##
-
-    i = 0
     try:
-        for job in job_listings:
-            i += 1
+        for i, job in enumerate(job_listings):
             job_title, job_company, location, salary, date_posting = "", "", "", "", ""
             try:
                 # Extract job details
@@ -198,14 +185,10 @@ def get_job_lists_soup(search_area: str):
                         "div", class_="mt1 t-sans t-12 t-black--light t-normal t-roman artdeco-entity-lockup__metadata ember-view").text.strip()
                 except Exception as e:
                     print(e)
-                    #logging.info(f'Scraped "{job_title}" doesnt have salary')
-
                 try:
                     date_posting = job.find("time")["datetime"]
                 except Exception as e:
                     print(e)
-                    # logging.info(
-                    #    f'Scraped "{job_title}" doesnt have date_posting')
 
                 apply_link = job.find(
                     "a", class_="disabled ember-view job-card-container__link job-card-list__title")["href"]
@@ -260,26 +243,20 @@ def write_number_to_file(job_title: str, loc: str, job_count: int, filename: str
 def save_job_data(job_title: str, loc: str, page_number: int, data: dict) -> None:
     """
     Save job data to a CSV file.
-
-    Args:
-        data: A dictionary containing job data.
-
-    Returns:
-        None
+    Args:data: A dictionary containing job data.
+    Returns: None
     """
     # Create a pandas DataFrame from the job data dictionary
     df = pd.DataFrame(data)
     title = job_title.replace(' ', '_')
     ts = datetime.now().strftime("%d-%m-%Y")
-    output_file = f"{title}_{loc}_jobs_{page_number}_{ts}.csv"
+    output_file = f"data/{title}_{loc}_jobs_{page_number}_{ts}.csv"
     if os.path.exists(output_file):
         # If the file already exists, append the DataFrame to it
         df.to_csv(output_file, mode='a', header=False, index=False)
     else:
         # If the file does not exist, save the DataFrame to a new file
         df.to_csv(output_file, index=False)
-    # Save the DataFrame to a CSV file without including the index column
-    #df.to_csv(output_file, index=False)
 
     # Log a message indicating how many jobs were successfully scraped and saved to the CSV file
     logging.info(
@@ -289,14 +266,29 @@ def save_job_data(job_title: str, loc: str, page_number: int, data: dict) -> Non
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('config.ini')
-    username = "sky99999222@gmail.com"
-    password = "vitalii123!"
-    loc = "Denver Colorado"
+    username = config['CREDENTIALS']['Username']
+    password = config['CREDENTIALS']['Password']
     job_title = "data engineer"
-    location = ["Atlanta, Georgia", "Austin, Texas", "Boston, Massachusetts", "Charlotte, North Carolina", "Chicago, Illinois", "Columbus, Ohio", "Dallas, Texas", "Denver, Colorado", "Houston, Texas", "Indianapolis, Indiana", "Kansas City, Missouri", "Los Angeles, California", "Miami, Florida", "Minneapolis, Minnesota", "Nashville, Tennessee",
-                "New York City, New York", "Orlando, Florida", "Philadelphia, Pennsylvania", "Phoenix, Arizona", "Pittsburgh, Pennsylvania", "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California", "San Francisco, California", "San Jose, California", "Seattle, Washington", "St. Louis, Missouri", "Tampa, Florida", "Washington, DC"]
+    locations = [  "Orlando, Florida", "Philadelphia, Pennsylvania",  "Pittsburgh, Pennsylvania", "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California", "Minneapolis, Minnesota", "Nashville, Tennessee",]
+
+    locations1 = ["Atlanta, Georgia", "Austin, Texas", "Boston, Massachusetts", "Charlotte, North Carolina", "Chicago, Illinois",
+                  "Columbus, Ohio", "Dallas, Texas", "Denver, Colorado", "Houston, Texas", "Indianapolis, Indiana", "Kansas City, Missouri",
+                  "Los Angeles, California", "Miami, Florida", "Minneapolis, Minnesota", "Nashville, Tennessee",
+                  "New York City, New York", "Orlando, Florida", "Philadelphia, Pennsylvania", "Phoenix, Arizona", "Pittsburgh, Pennsylvania",
+                  "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California",
+                  "San Francisco, California", "San Jose, California", "Seattle, Washington", "St. Louis, Missouri", "Tampa, Florida", "Washington, DC"]
+
+    # Configure logging settings
+    logging.basicConfig(filename="scraping.log", level=logging.INFO)
+
+    # Set up Chrome options to maximize the window
+    options = webdriver.ChromeOptions()
+    options.add_argument("--start-maximized")
+
+    # Initialize the web driver with the Chrome options
+    driver = webdriver.Chrome(options=options)
     login_to_linkedin(username, password)
-    for loc in location:
-        scrapping_workflow(loc, job_title)
+    for location in locations:
+        scrapping_workflow(location, job_title)
 
     driver.quit()
