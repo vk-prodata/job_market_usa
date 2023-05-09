@@ -84,8 +84,19 @@ def align_salary(salary:str,text: str):
 
     return res
 
+def convert_date_to_week_start(datestr):
+    date = datetime.datetime.strptime(datestr, '%d-%m-%Y').date()
+    start_of_week = date - datetime.timedelta(days=date.weekday())
+    return start_of_week.strftime('%Y-%m-%d')
 
-
+def extract_date_from_filename(filename):
+    match = re.search(r'\d{2}-\d{2}-\d{4}', filename)
+    if match:
+        return convert_date_to_week_start(match.group(0))
+    else:
+        return None
+    
+#deprecated
 def fill_date_posting(date_posting):
     if pd.isna(date_posting):
         return (datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%m/%d/%Y")

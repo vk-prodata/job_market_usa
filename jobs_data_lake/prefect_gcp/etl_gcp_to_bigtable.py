@@ -6,25 +6,7 @@ from prefect_gcp import GcpCredentials
 import gspread
 from gspread_dataframe import set_with_dataframe
 from google.oauth2.service_account import Credentials
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 
-def read_gsheet():
-    scopes = ['https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive']
-
-    credentials = Credentials.from_service_account_file('credentials/dtc-de-375803-8dd8e44e7ffd.json', scopes=scopes)
-
-    gc = gspread.authorize(credentials)
-
-    gauth = GoogleAuth()
-    drive = GoogleDrive(gauth)
-    sheet_id = '1Vd9U3pNQGguPjmxkDZKq5DD6kTB6Mwy08bpt2WICTiU'
-    # open a google sheet
-    gs = gc.open_by_key(sheet_id)
-    # select a work sheet from its name
-    sheet = gs.worksheet('staging')
-    print(sheet)
 
 
 @task()

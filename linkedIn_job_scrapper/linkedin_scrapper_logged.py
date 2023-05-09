@@ -269,7 +269,7 @@ if __name__ == "__main__":
     username = config['CREDENTIALS']['Username']
     password = config['CREDENTIALS']['Password']
     job_title = "data engineer"
-    locations = [  "Orlando, Florida", "Philadelphia, Pennsylvania",  "Pittsburgh, Pennsylvania", "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California", "Minneapolis, Minnesota", "Nashville, Tennessee",]
+    locations = ["Pittsburgh, Pennsylvania", "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California",]
 
     locations1 = ["Atlanta, Georgia", "Austin, Texas", "Boston, Massachusetts", "Charlotte, North Carolina", "Chicago, Illinois",
                   "Columbus, Ohio", "Dallas, Texas", "Denver, Colorado", "Houston, Texas", "Indianapolis, Indiana", "Kansas City, Missouri",
