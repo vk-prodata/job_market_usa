@@ -143,7 +143,7 @@ def job_count_to_parquet():
 @flow()
 def stg_csv_job_to_parquet():
     """The main ETL function"""
-    partition_ds = "10-04-2023"
+    partition_ds = "02-06-2023"
     parquet_path = f"./data/stg_data_engineer_{partition_ds}.parquet"
 
     csv_dir = f"./data/{partition_ds}/"

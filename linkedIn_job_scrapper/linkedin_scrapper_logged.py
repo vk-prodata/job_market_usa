@@ -16,6 +16,7 @@ import random
 import time
 from datetime import datetime
 import urllib.parse
+import chromedriver_autoinstaller
 
 PAGE_SIZE = 25
 MAX_RETRIES = 3
@@ -25,7 +26,7 @@ def login_to_linkedin(username, password):
 
     # Navigate to LinkedIn login page
     driver.get('https://www.linkedin.com/')
-    driver.implicitly_wait(3)
+    driver.implicitly_wait(7)
     _username = driver.find_element(By.ID, 'session_key')
     _password = driver.find_element(By.ID, 'session_password')
     _login = driver.find_element(
@@ -33,7 +34,7 @@ def login_to_linkedin(username, password):
     _username.send_keys(username)
     _password.send_keys(password)
     _login.click()
-    time.sleep(5)
+    time.sleep(7)
 
 
 def prepare_string_for_url(string):
@@ -47,7 +48,7 @@ def prepare_string_for_url(string):
     return encoded_string
 
 
-def scrapping_workflow(loc: str, job_title: str):
+def scrapping_workflow(loc: str, job_title: str, subfolder: str):
     url_title = prepare_string_for_url(job_title)
     url_loc = prepare_string_for_url(loc)
     query = f"https://www.linkedin.com/jobs/search/?f_T=13447%2C340%2C2732%2C30209%2C30006&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
@@ -72,7 +73,7 @@ def scrapping_workflow(loc: str, job_title: str):
 
     logging.info(
         f"Successfully open {query=}")
-    time.sleep(random.choice(list(range(3, 8))))
+    time.sleep(random.choice(list(range(3, 10))))
     # We find how many jobs are offered. Nice to have (not mandatory) this info for comparison count of all scrapped positions
     # if we cannot capture jobs count set 1000 - max count that we can retrieve from linkedin UI
     try:
@@ -103,11 +104,11 @@ def scrapping_workflow(loc: str, job_title: str):
             break
         try:
             scrolling_left_section(query+str(i*PAGE_SIZE))
-            time.sleep(9)  # we need aboit 9 sec for loading all info
+            time.sleep(11)  # we need aboit 11 sec for loading all info
             jobs = get_job_lists_soup(loc)
             i += 1
             driver.get(query+str(i*PAGE_SIZE))
-            save_job_data(job_title, loc, 1, jobs)
+            save_job_data(job_title, loc, 1, jobs, subfolder)
             time.sleep(random.random()*5)
         except:
             # If there is no button, there will be an error, so we keep scrolling down.
@@ -240,7 +241,7 @@ def write_number_to_file(job_title: str, loc: str, job_count: int, filename: str
                             datetime.now().strftime("%H_%M_%S")])
 
 
-def save_job_data(job_title: str, loc: str, page_number: int, data: dict) -> None:
+def save_job_data(job_title: str, loc: str, page_number: int, data: dict, subfolder: str) -> None:
     """
     Save job data to a CSV file.
     Args:data: A dictionary containing job data.
@@ -250,7 +251,7 @@ def save_job_data(job_title: str, loc: str, page_number: int, data: dict) -> Non
     df = pd.DataFrame(data)
     title = job_title.replace(' ', '_')
     ts = datetime.now().strftime("%d-%m-%Y")
-    output_file = f"data/{title}_{loc}_jobs_{page_number}_{ts}.csv"
+    output_file = f"data/{subfolder}/{title}_{loc}_jobs_{page_number}_{ts}.csv"
     if os.path.exists(output_file):
         # If the file already exists, append the DataFrame to it
         df.to_csv(output_file, mode='a', header=False, index=False)
@@ -269,8 +270,7 @@ if __name__ == "__main__":
     username = config['CREDENTIALS']['Username']
     password = config['CREDENTIALS']['Password']
     job_title = "data engineer"
-    locations = ["Pittsburgh, Pennsylvania", "Portland, Oregon", "Raleigh, North Carolina", "Salt Lake City, Utah", "San Antonio, Texas", "San Diego, California",]
-
+    locations = ["San Francisco, California", "San Jose, California", "Seattle, Washington", "St. Louis, Missouri", "Tampa, Florida", "Washington, DC"]
     locations1 = ["Atlanta, Georgia", "Austin, Texas", "Boston, Massachusetts", "Charlotte, North Carolina", "Chicago, Illinois",
                   "Columbus, Ohio", "Dallas, Texas", "Denver, Colorado", "Houston, Texas", "Indianapolis, Indiana", "Kansas City, Missouri",
                   "Los Angeles, California", "Miami, Florida", "Minneapolis, Minnesota", "Nashville, Tennessee",
@@ -282,13 +282,41 @@ if __name__ == "__main__":
     logging.basicConfig(filename="scraping.log", level=logging.INFO)
 
     # Set up Chrome options to maximize the window
-    options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
-
+    # options = webdriver.ChromeOptions()
+    # options.add_argument("--start-maximized")
     # Initialize the web driver with the Chrome options
-    driver = webdriver.Chrome(options=options)
+    #driver = webdriver.Chrome(options=options)
+    chromedriver_autoinstaller.install() 
+ 
+    # Create Chromeoptions instance 
+    options = webdriver.ChromeOptions() 
+    options.add_argument("--start-maximized")
+    
+    # Adding argument to disable the AutomationControlled flag 
+    options.add_argument("--disable-blink-features=AutomationControlled") 
+    
+    # Exclude the collection of enable-automation switches 
+    options.add_experimental_option("excludeSwitches", ["enable-automation"]) 
+    
+    # Turn-off userAutomationExtension 
+    options.add_experimental_option("useAutomationExtension", False) 
+    
+    # Initializing a list with two Useragents 
+    useragentarray = [ 
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36", 
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36", 
+    ] 
+
+    # Setting the driver path and requesting a page 
+    driver = webdriver.Chrome(options=options) 
+    
+    # Changing the property of the navigator value for webdriver to undefined 
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") 
+    #driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": useragentarray[0]}) 
+    subfolder = "02-06-2023"
+
     login_to_linkedin(username, password)
     for location in locations:
-        scrapping_workflow(location, job_title)
+        scrapping_workflow(location, job_title, subfolder)
 
     driver.quit()
