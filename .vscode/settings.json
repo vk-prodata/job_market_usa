@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./jobs_data_lake/prefect_spark"
+    ]
+}

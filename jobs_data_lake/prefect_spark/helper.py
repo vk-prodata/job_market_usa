@@ -85,9 +85,17 @@ def align_salary(salary:str,text: str):
     return res
 
 def convert_date_to_week_start(datestr):
-    date = datetime.datetime.strptime(datestr, '%d-%m-%Y').date()
+    # Convert string to datetime object
+    date = datetime.datetime.strptime(datestr, '%Y-%m-%d %H:%M:%S.%f')
+    
+    # Subtract the current day of the week from the date to get to the start of the week (Monday)
     start_of_week = date - datetime.timedelta(days=date.weekday())
-    return start_of_week.strftime('%Y-%m-%d')
+    
+    # Return the date part only
+    return start_of_week.date().strftime('%Y-%m-%d')
+    # date = datetime.datetime.strptime(datestr, '%d-%m-%Y').date()
+    # start_of_week = date - datetime.timedelta(days=date.weekday())
+    # return start_of_week.strftime('%Y-%m-%d')
 
 def extract_date_from_filename(filename):
     match = re.search(r'\d{2}-\d{2}-\d{4}', filename)
@@ -128,7 +136,7 @@ def cloud_type(title: str) -> str:
     return None
 
 def extract_positition_type(title: str) -> str:
-    type_keywords = {"analyst":"Data Analyst", "analysis":"Data Analyst", "science":"Data Science", "analytics":"Analytics Engineer", "intelligence":"BI Developer", "engineer":"Data Engineer", "data": "Any Data", "bi":"BI Developer",  "software":"Software Engineer"}
+    type_keywords = {"machine learning": "Machine Learning", "ml ": "Machine Learning",  "analyst":"Data Analyst", "analysis":"Data Analyst", "science":"Data Science", "analytics":"Analytics Engineer", "intelligence":"BI Developer", "engineer":"Data Engineer", "platform":"Platform Engineer", "data": "Any Data", "bi":"BI Developer",  "software":"Software Engineer"}
     for keyword, sen in type_keywords.items():
         if keyword in title.lower():
             return sen
@@ -203,8 +211,8 @@ def split_location(location: str):
             else:
                 result = None, shorten_state(city_state[0])
         elif len(city_state) >= 2:
-            state = city_state[1].split(" ")
-            result =city_state[0], shorten_state(state[0])
+            state = city_state[1] #.split(" ")
+            result =city_state[0], shorten_state(state)
         else:
             result = None, "USA"
     return result

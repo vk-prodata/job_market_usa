@@ -17,6 +17,7 @@ import time
 from datetime import datetime
 import urllib.parse
 import chromedriver_autoinstaller
+from selenium.webdriver.chrome.options import Options
 
 PAGE_SIZE = 25
 MAX_RETRIES = 3
@@ -26,7 +27,7 @@ def login_to_linkedin(username, password):
 
     # Navigate to LinkedIn login page
     driver.get('https://www.linkedin.com/')
-    driver.implicitly_wait(7)
+    driver.implicitly_wait(27)
     _username = driver.find_element(By.ID, 'session_key')
     _password = driver.find_element(By.ID, 'session_password')
     _login = driver.find_element(
@@ -51,8 +52,37 @@ def prepare_string_for_url(string):
 def scrapping_workflow(loc: str, job_title: str, subfolder: str):
     url_title = prepare_string_for_url(job_title)
     url_loc = prepare_string_for_url(loc)
-    query = f"https://www.linkedin.com/jobs/search/?f_T=13447%2C340%2C2732%2C30209%2C30006&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+    #query =      f"https://www.linkedin.com/jobs/search/?f_T=13447%2C340%2C2732%2C30209%2C30006&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+    #query_open = f"https://www.linkedin.com/jobs/search/?f_T=13447%2C340%2C2732%2C30209%2C30006&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+    query =      f"https://www.linkedin.com/jobs/search/?f_T=30209%2C25206%2C30006%2C340%2C13447%2C3282%2C2732&f_TPR=r604800&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+    query_open = f"https://www.linkedin.com/jobs/search/?f_T=30209%2C25206%2C30006%2C340%2C13447%2C3282%2C2732&keywords={url_title}&location={url_loc}&refresh=true&sortBy=RR&start="
+    #%2C6483
+                  #https://www.linkedin.com/jobs/search/?f_T=30209%2C25206%2C30006%2C340%2C13447%2C3282%2C2732&f_TPR=r604800&keywords=data&location=austin&refresh=true&sortBy=RR#query =       f"https://www.linkedin.com/jobs/search/?f_T=30209%2C2463%2C25206%2C30006%2C340%2C13447%2C1547%2C1437%2C2732&f_TPR=r604800keywords={url_title}&location={url_loc}&sortBy=RR&start="
+    #query_open =  f"https://www.linkedin.com/jobs/search/?f_T=30209%2C2463%2C25206%2C30006%2C340%2C13447%2C1547%2C1437%2C2732&keywords={url_title}&location={url_loc}&sortBy=RR&start="
+    #                https://www.linkedin.com/jobs/search/?f_T=30209%2C2463%2C25206%2C30006%2C340%2C13447%2C1547%2C1437%2C2732&f_TPR=r604800&location=Austin%2C%20Texas&sortBy=RR
+    jobs_num_open = get_jobs_num(query_open, loc)
+    jobs_num = get_jobs_num(query, loc)
+    write_number_to_file(job_title, loc, jobs_num, jobs_num_open, 'jobs_count.csv')
+    # MAIN SECTION FOR PARSING JOBS
+    # We create a while loop to browse all jobs.
+    i = 0
+    while i <= int(jobs_num/PAGE_SIZE):
+        if is_last_page(driver) == True:
+            break
+        try:
+            scrolling_left_section(query+str(i*PAGE_SIZE))
+            time.sleep(11)  # we need about 11 sec for loading all info
+            jobs = get_job_lists_soup(loc)
+            i += 1
+            driver.get(query+str(i*PAGE_SIZE))
+            save_job_data(job_title, loc, 1, jobs, subfolder)
+            time.sleep(random.random()*5)
+        except:
+            # If there is no button, there will be an error, so we keep scrolling down.
+            time.sleep(0.8)
+            pass
 
+def get_jobs_num(query, loc) -> int:
     retry_count = 0
     success = False
     # open Job page. Sometimes it's failed, added try with 3 retries
@@ -91,30 +121,11 @@ def scrapping_workflow(loc: str, job_title: str, subfolder: str):
                 f"No number found in text {jobs_num_str} in {loc=} for {job_title=}")
             jobs_num = 1000
             print("No number found in text")
-        write_number_to_file(job_title, loc, jobs_num, 'jobs_count.csv')
     except Exception as e:
         # Log a message indicating that the button was not found and we're retrying
         logging.info(f"jobs_num cannot retrieve {e=}")
         jobs_num = 1000
-    # MAIN SECTION FOR PARSING JOBS
-    # We create a while loop to browse all jobs.
-    i = 0
-    while i <= int(jobs_num/PAGE_SIZE):
-        if is_last_page(driver) == True:
-            break
-        try:
-            scrolling_left_section(query+str(i*PAGE_SIZE))
-            time.sleep(11)  # we need aboit 11 sec for loading all info
-            jobs = get_job_lists_soup(loc)
-            i += 1
-            driver.get(query+str(i*PAGE_SIZE))
-            save_job_data(job_title, loc, 1, jobs, subfolder)
-            time.sleep(random.random()*5)
-        except:
-            # If there is no button, there will be an error, so we keep scrolling down.
-            time.sleep(0.8)
-            pass
-
+    return jobs_num
 
 def is_last_page(driver):
     try:
@@ -222,22 +233,22 @@ def get_job_lists_soup(search_area: str):
     return jobs
 
 
-def write_number_to_file(job_title: str, loc: str, job_count: int, filename: str):
+def write_number_to_file(job_title: str, loc: str, job_count: int, job_count_open: int, filename: str):
     # Try to open the file in "append" mode
     try:
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             # Write two numbers to CSV row
-            writer.writerow([job_title, loc, job_count, datetime.now()])
+            writer.writerow([job_title, loc, job_count, job_count_open, datetime.now()])
 
     # If the file doesn't exist, create it and write the numbers to it
     except FileNotFoundError:
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['Title', 'Location', 'Job Count',
+            writer.writerow(['Title', 'Location', 'Job Count', 'Job Count Open',
                             'Datetime'])  # Write header row
             # Write two numbers to CSV row
-            writer.writerow([job_title, loc, job_count,
+            writer.writerow([job_title, loc, job_count, job_count_open,
                             datetime.now().strftime("%H_%M_%S")])
 
 
@@ -265,12 +276,15 @@ def save_job_data(job_title: str, loc: str, page_number: int, data: dict, subfol
 
 
 if __name__ == "__main__":
+    # base
     config = configparser.ConfigParser()
     config.read('config.ini')
     username = config['CREDENTIALS']['Username']
     password = config['CREDENTIALS']['Password']
+    subfolder = "02-12-2023"
     job_title = "data engineer"
-    locations = ["San Francisco, California", "San Jose, California", "Seattle, Washington", "St. Louis, Missouri", "Tampa, Florida", "Washington, DC"]
+    locations = ["Chicago, Illinois","San Francisco, California", "San Jose, California", "Seattle, Washington", "St. Louis, Missouri", "Tampa, Florida", "Washington, DC"]
+
     locations1 = ["Atlanta, Georgia", "Austin, Texas", "Boston, Massachusetts", "Charlotte, North Carolina", "Chicago, Illinois",
                   "Columbus, Ohio", "Dallas, Texas", "Denver, Colorado", "Houston, Texas", "Indianapolis, Indiana", "Kansas City, Missouri",
                   "Los Angeles, California", "Miami, Florida", "Minneapolis, Minnesota", "Nashville, Tennessee",
@@ -282,38 +296,44 @@ if __name__ == "__main__":
     logging.basicConfig(filename="scraping.log", level=logging.INFO)
 
     # Set up Chrome options to maximize the window
-    # options = webdriver.ChromeOptions()
-    # options.add_argument("--start-maximized")
+    #options = webdriver.ChromeOptions()
+    #options.add_argument('/Users/kudriavtcevi/Desktop/job_market_usa/linkedIn_job_scrapper/chromedriver')
+    #options.add_argument("--start-maximized")
+    options = Options()
+    options.binary_location = r'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    #options.add_argument("--start-maximized")
     # Initialize the web driver with the Chrome options
+    driver = webdriver.Chrome(options = options, executable_path=r'/Users/kudriavtcevi/Desktop/job_market_usa/linkedIn_job_scrapper/chromedriver')
+    #driver = webdriver.Chrome('/path/to/chromedriver')
     #driver = webdriver.Chrome(options=options)
-    chromedriver_autoinstaller.install() 
+    #chromedriver_autoinstaller.install() 
  
     # Create Chromeoptions instance 
-    options = webdriver.ChromeOptions() 
-    options.add_argument("--start-maximized")
+    #options = webdriver.ChromeOptions() 
+    # options.add_argument("--start-maximized")
     
-    # Adding argument to disable the AutomationControlled flag 
-    options.add_argument("--disable-blink-features=AutomationControlled") 
+    # # Adding argument to disable the AutomationControlled flag 
+    # options.add_argument("--disable-blink-features=AutomationControlled") 
     
-    # Exclude the collection of enable-automation switches 
-    options.add_experimental_option("excludeSwitches", ["enable-automation"]) 
+    # # Exclude the collection of enable-automation switches 
+    # options.add_experimental_option("excludeSwitches", ["enable-automation"]) 
     
-    # Turn-off userAutomationExtension 
-    options.add_experimental_option("useAutomationExtension", False) 
+    # # Turn-off userAutomationExtension 
+    # options.add_experimental_option("useAutomationExtension", False) 
     
-    # Initializing a list with two Useragents 
-    useragentarray = [ 
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36", 
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36", 
-    ] 
+    # #Initializing a list with two Useragents 
+    # useragentarray = [ 
+    #     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36", 
+    #     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36", 
+    # ] 
 
-    # Setting the driver path and requesting a page 
-    driver = webdriver.Chrome(options=options) 
+    # #Setting the driver path and requesting a page 
+    # driver = webdriver.Chrome(options=options) 
     
-    # Changing the property of the navigator value for webdriver to undefined 
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") 
-    #driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": useragentarray[0]}) 
-    subfolder = "02-06-2023"
+    # #Changing the property of the navigator value for webdriver to undefined 
+    # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") 
+    # driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": useragentarray[0]}) 
+    
 
     login_to_linkedin(username, password)
     for location in locations:

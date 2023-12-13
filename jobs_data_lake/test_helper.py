@@ -1,12 +1,13 @@
 #from jobs_data_lake.helper import extract_salaries
-import helper
+from prefect_spark.helper import extract_salaries, split_location
+#import helper
 
 
 def test_extract_salaries_returns_list():
     """
     Test that the scrape_linkedin_jobs function returns a list.
     """
-    results = helper.extract_salaries("""salaries and return list from a text example:Salesforce welcomes all.For Colorado-based roles, the base salary hiring range for this 
+    results = extract_salaries("""salaries and return list from a text example:Salesforce welcomes all.For Colorado-based roles, the base salary hiring range for this 
                                position is $129,800 to $184,200.Compensation offered will be determined by factors such as location, level, job-related knowledge, 
                                skills, and experience.Certain roles may be eligible for incentive compensation, equity, and benefits. More details about our company 
                                benefits can be found at the following link: https://www.salesforcebenefits.com.
@@ -22,11 +23,11 @@ def test_split_location_list():
     """
     Test that the scrape_linkedin_jobs function returns a list.
     """
-    locations = ['Washington, DC (Hybrid)','Seattle, WA (On-site)', 'Nashville, TN (Hybrid)','North Carolina, United States', 'California, US', 'Miami-Fort Lauderdale Area', 'Phoenix, AZ',  'Linthicum, MD', 'United States', 'United States', 'New York, NY',
+    locations = ['Charlotte, North Carolina','Washington, DC (Hybrid)','Seattle, WA (On-site)', 'Nashville, TN (Hybrid)','North Carolina, United States', 'California, US', 'Miami-Fort Lauderdale Area', 'Phoenix, AZ',  'Linthicum, MD', 'United States', 'United States', 'New York, NY',
                  'Manhattan Beach, CA',   'Santa Clara, California','US']
     results = []
     for loc in locations:
-        results.append(helper.split_location(loc))
+        results.append(split_location(loc))
     assert len(results) > 5
 
 
